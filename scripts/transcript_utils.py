@@ -16,6 +16,7 @@ from typing import Optional, Union
 _CLAUDE_BIN = shutil.which("claude") or str(Path.home() / ".local/bin/claude")
 
 from config import KEY_TIMESTAMP_WINDOW
+from progress import Heartbeat
 
 
 @dataclass
@@ -263,8 +264,13 @@ def _score_blocks_with_haiku(blocks: list[SRTBlock], intent: str) -> dict[int, d
     """
     CHUNK = 100
     all_scores: dict[int, dict] = {}
+    n_chunks = (len(blocks) + CHUNK - 1) // CHUNK
 
-    for i in range(0, len(blocks), CHUNK):
+    # One ticker spans the whole scoring pass; the label carries the chunk
+    # counter so a multi-minute silent stretch shows continuous progress.
+    with Heartbeat("Scoring transcript for intent", timeout=300) as hb:
+      for i in range(0, len(blocks), CHUNK):
+        hb.update(f"Scoring transcript for intent (chunk {i // CHUNK + 1}/{n_chunks})")
         chunk = blocks[i:i + CHUNK]
         lines = []
         for b in chunk:

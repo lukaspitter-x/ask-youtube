@@ -212,7 +212,9 @@ almost always the cause.
 
 - **Deep mode is slow on purpose.** It's describing every chosen frame with
   a vision model and fact-checking against the web. ~10 minutes is normal.
-  Don't kill it because it looks hung.
+  You won't have to guess whether it's stuck: every long step shows a live
+  `⏳ … elapsed (times out at M:SS)` ticker, so a moving counter is your
+  proof it's still working.
 - **It costs a little money.** Deep runs spend Claude tokens — budget
   ~$0.50–$2 per video. `fast`/`standard` are free.
 - **The frame-picker follows your intent.** If it missed a moment you cared

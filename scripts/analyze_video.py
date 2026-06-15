@@ -35,6 +35,7 @@ from transcript_utils import (
     get_intent_aligned_timestamps,
     SRTBlock,
 )
+from progress import Heartbeat
 
 
 # Hard cap on how many frames the describer ever runs over. Prevents a
@@ -342,7 +343,12 @@ def describe_frames_with_agent(
     merged_requests: list[dict] = []
     chunk_errors: list[str] = []
 
-    with ThreadPoolExecutor(max_workers=effective_workers) as pool:
+    # The chunks run silently in parallel (up to 240s each). Without a ticker
+    # this is the longest dead-air stretch of deep mode; the heartbeat keeps a
+    # live elapsed counter and each chunk reports as it lands.
+    done = 0
+    with Heartbeat(f"Describing {len(frame_files)} frames (0/{len(chunks)} chunks)") as hb, \
+            ThreadPoolExecutor(max_workers=effective_workers) as pool:
         futures = {
             pool.submit(_run_describer_chunk, chunk, intent, metadata, idx + 1, len(chunks)): idx
             for idx, chunk in enumerate(chunks)
@@ -353,12 +359,19 @@ def describe_frames_with_agent(
                 chunk_data = fut.result()
             except Exception as e:
                 chunk_errors.append(f"chunk {idx + 1}: {e}")
+                done += 1
+                hb.log(f"✗ chunk {idx + 1}/{len(chunks)} failed: {e}")
+                hb.update(f"Describing {len(frame_files)} frames ({done}/{len(chunks)} chunks)")
                 continue
             merged_frames.extend(chunk_data.get("frames", []))
             v = chunk_data.get("validation", {})
             merged_viewed.extend(v.get("frames_viewed_with_vision", []))
             merged_skipped.extend(v.get("frames_skipped", []))
             merged_requests.extend(v.get("request_additional_frames", []))
+            done += 1
+            hb.log(f"✓ chunk {idx + 1}/{len(chunks)} described "
+                   f"({len(chunk_data.get('frames', []))} frames)")
+            hb.update(f"Describing {len(frame_files)} frames ({done}/{len(chunks)} chunks)")
 
     frame_data = {
         "frames": merged_frames,
@@ -614,15 +627,18 @@ Return as JSON with three fields:
 - `request_additional_frames`: optional list of timestamps where a frame is missing"""
 
         try:
-            result = subprocess.run(
-                [_CLAUDE_BIN, "--print", "--agent", "video-analyzer", "--allowedTools", "WebSearch"],
-                input=prompt,
-                capture_output=True,
-                text=True,
-                cwd=str(_REPO_ROOT),
-                env=_subprocess_env(),
-                timeout=300,  # 5 min hard ceiling for synthesis
-            )
+            label = "Synthesizing analysis" if iteration == 0 else \
+                f"Re-synthesizing with added frames (iteration {iteration + 1})"
+            with Heartbeat(label, timeout=300):
+                result = subprocess.run(
+                    [_CLAUDE_BIN, "--print", "--agent", "video-analyzer", "--allowedTools", "WebSearch"],
+                    input=prompt,
+                    capture_output=True,
+                    text=True,
+                    cwd=str(_REPO_ROOT),
+                    env=_subprocess_env(),
+                    timeout=300,  # 5 min hard ceiling for synthesis
+                )
         except subprocess.TimeoutExpired:
             print("Warning: Video analyzer timed out after 300s")
             analysis_md = "# Analysis Failed\n\nVideo analyzer subprocess timed out."
