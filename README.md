@@ -117,50 +117,58 @@ crash on import — rebuild with `python3.12 -m venv .venv`.)
 
 ## 🎬 Usage
 
+**Three steps. No commands to memorise.**
+
+1. Open this folder in [Claude Code](https://claude.com/claude-code)
+   (`cd ask-youtube` then run `claude`).
+2. Paste a **YouTube URL** and **the question you actually want answered**.
+3. Wait. Claude does the rest and hands you back the analysis page.
+
+That's the whole thing. For example, just type:
+
+> **`https://youtu.be/VIDEO_ID — how does their auth flow actually work?`**
+
+Claude figures out the rest, runs the pipeline for you, and tells you where your
+`analysis.html` landed. (Deep analysis takes a while — see the ⏳ note up top.
+That's normal, don't panic.)
+
+### 💡 The one thing that matters: ask a *specific* question
+
+The whole tool is built around your question — it's what decides which moments of
+the video to look at and what the headline answer is written to. Vague in, vague
+out:
+
+- 🚫 "summarize this"
+- ✅ "What are the exact CLAUDE.md patterns they recommend, and why?"
+
+That's it. You can stop reading here. 👇 *Everything below is for people who want
+to run it without Claude Code, or script it.*
+
+<details>
+<summary><b>Prefer the command line / want to script it?</b> (optional, advanced)</summary>
+
 Run everything **from the repo root** — deep mode looks for its agents in
-`./.claude/agents/`, so the working directory matters.
+`./.claude/agents/`.
 
-**Just grab the transcript + frames (fast):**
 ```bash
+# Fast: just the transcript + frames, no AI, free
 .venv/bin/python3 scripts/fetch.py "https://youtu.be/VIDEO_ID" --mode standard
-```
 
-**The good stuff — a full analysis answering your question (deep):**
-```bash
+# Deep: the full analysis answering your question
 .venv/bin/python3 scripts/fetch.py "https://youtu.be/VIDEO_ID" \
   --mode deep \
   --intent "How does the auth flow actually work?"
-```
 
-`--intent` is the whole game in deep mode. It's what the frame-picker scores
-against and what THE ANSWER is written to. Be specific:
-
-- 🚫 `--intent "summarize this"`
-- ✅ `--intent "What are the exact CLAUDE.md patterns they recommend, and why?"`
-
-**Re-ask a different question on a video you already pulled** (skips the
-download entirely):
-```bash
+# Re-ask a new question on a video you already pulled (skips the download)
 .venv/bin/python3 scripts/analyze_video.py "output/260101-ytb-some-video/" \
   --intent "A totally different angle"
 ```
 
-**Other handy flags:**
+Handy flags: `--intent "..."` (your question, drives deep mode) · `--frames N`
+(cap analysed frames; `0` = transcript only) · `--skip-video` (don't download the
+video file) · `-m fast` (skip correlation, just dump artefacts).
 
-| Flag | Does |
-|---|---|
-| `--frames N` | Cap how many frames get analysed. `--frames 0` = transcript only (fast/standard). |
-| `--skip-video` | Don't download the video file — transcript + frames only. |
-| `-m fast` | Skip correlation, just dump artefacts. |
-
-### Doing it the lazy way (from inside Claude Code)
-
-Since the agents already live in `.claude/agents/`, you can also just open
-this repo in Claude Code and say:
-
-> "deep-analyze https://youtu.be/VIDEO_ID — I want to know X"
-
-…and let Claude drive `fetch.py` for you. Whatever's comfier.
+</details>
 
 ---
 
