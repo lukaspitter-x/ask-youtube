@@ -207,7 +207,11 @@ def main():
     token = (args.output_dir / ".share_token").read_text().strip()
     print(f"Wrote {html_path}")
     print(f"Share token: {token}")
-    print(f"Local URL:   file://{html_path}")
+    # NB: opening the file directly (file://) breaks the embedded YouTube player
+    # — the IFrame API rejects the null origin (Error 153). Serve over http instead.
+    print("To view with a working player, serve it over http:")
+    print(f"  python3 -m http.server 8000 --directory {html_path.parent}")
+    print("  then open http://localhost:8000/analysis.html")
 
 
 if __name__ == "__main__":

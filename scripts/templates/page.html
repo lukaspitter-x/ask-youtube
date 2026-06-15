@@ -107,6 +107,22 @@ a:hover { color: var(--paper); border-bottom-color: var(--accent); }
   position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
 }
 
+/* file:// fallback — clickable thumbnail when the inline player can't load */
+.player-fallback {
+  position: absolute; inset: 0; display: flex; align-items: flex-end;
+  border: 0; text-decoration: none;
+}
+.player-fallback img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.player-fallback-msg {
+  position: relative; z-index: 1; width: 100%;
+  background: linear-gradient(transparent, rgba(0,0,0,0.88));
+  color: var(--paper); font-family: var(--mono); font-size: 12px; line-height: 1.4;
+  padding: 36px 14px 12px;
+}
+.player-fallback:hover .player-fallback-msg { color: var(--accent-soft); }
+
 .title {
   font-family: var(--display);
   font-weight: 600;
@@ -395,23 +411,50 @@ __BODY__
 
 <script>
 const VIDEO_ID = "__VIDEO_ID__";
+// The YouTube IFrame Player API validates the embedding origin. From a file://
+// URL the origin is "null", so YouTube refuses with "Error 153 — configuration
+// error" and the player never loads. Serve the page over http(s) to play inline.
+const IS_FILE = location.protocol === 'file:';
 let player;
 let playerReady = false;
 
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-document.head.appendChild(tag);
+if (IS_FILE) {
+  showPlayerFallback();
+} else {
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+}
 
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {
     videoId: VIDEO_ID,
-    playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
-    events: { onReady: () => { playerReady = true; } }
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, origin: location.origin },
+    events: {
+      onReady: () => { playerReady = true; },
+      onError: () => showPlayerFallback("This video can't be embedded — watch it on YouTube ↗")
+    }
   });
 }
 
+// Replace the dead player with a clickable thumbnail + hint.
+function showPlayerFallback(msg) {
+  const wrap = document.querySelector('.video-wrap');
+  if (!wrap) return;
+  const url = 'https://www.youtube.com/watch?v=' + VIDEO_ID;
+  const hint = msg || 'Serve this page over http:// to play inline — or click to watch on YouTube ↗';
+  wrap.innerHTML =
+    '<a class="player-fallback" href="' + url + '" target="_blank" rel="noopener">' +
+    '<img src="https://i.ytimg.com/vi/' + VIDEO_ID + '/hqdefault.jpg" alt="">' +
+    '<span class="player-fallback-msg">' + hint + '</span></a>';
+}
+
 function seekTo(seconds) {
-  if (!playerReady) return;
+  // No inline player (opened as file://, or embedding blocked) → open YouTube.
+  if (!playerReady) {
+    window.open('https://www.youtube.com/watch?v=' + VIDEO_ID + '&t=' + seconds + 's', '_blank', 'noopener');
+    return;
+  }
   player.seekTo(seconds, true);
   player.playVideo();
   if (window.innerWidth < 1100) {
