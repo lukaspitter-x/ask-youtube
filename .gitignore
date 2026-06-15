@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Tool output — downloaded videos, audio, frames, generated pages.
+# Can be hundreds of MB per video. Never commit.
+output/
+media/
+
+# Share tokens are auth — never commit them
+.share_token
+
+# OS cruft
+.DS_Store

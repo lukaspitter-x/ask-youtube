@@ -1,0 +1,29 @@
+{
+  "skill_name": "ask-youtube",
+  "evals": [
+    {
+      "id": 1,
+      "name": "url-paste-default-standard",
+      "prompt": "https://www.youtube.com/watch?v=jNQXAC9IVRw what is this",
+      "expected_output": "Agent runs scripts/fetch.py in standard mode (the default), producing transcript.srt + frames/ + frame_correlation.json under media/youtube/<slug>/. Reports the output path. Without the skill, agent may pick a different approach (manually wgetting, summarising from prior knowledge, or running yt-dlp directly with no transcript pipeline).",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "name": "transcript-only-fast-skip-video",
+      "prompt": "grab the transcript of https://www.youtube.com/watch?v=aircAruvnKk - dont need the video itself",
+      "expected_output": "Agent runs scripts/fetch.py --mode fast --skip-video. Output dir contains transcript.srt but NO video.mp4 / audio.mp3. Without the skill, agent likely downloads everything (wastes ~30 MB and 30+ seconds), or uses an external service.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 3,
+      "name": "analytical-deep-with-intent",
+      "prompt": "i wanna understand how a neural network learns from this video https://www.youtube.com/watch?v=aircAruvnKk - pull out the key explanations and equations",
+      "expected_output": "Agent invokes scripts/fetch.py --mode deep --intent \"...how a neural network learns / key explanations and equations...\". Final output dir contains analysis.md addressing the intent. Without the skill, agent likely just downloads the transcript and summarises in chat without producing analysis.md or running the agent pipeline. NOTE: this is the most expensive test (~10+ min if it runs end-to-end). Agents that pick the right command but timeout still count as 'correct mode selection'.",
+      "files": [],
+      "assertions": []
+    }
+  ]
+}
