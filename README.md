@@ -52,7 +52,12 @@ Three speeds, depending on how much you care:
 |---|---|---|---|
 | **`fast`** | ~30s | Transcript + key frames. Just the artefacts. | free |
 | **`standard`** | ~1 min | Above + frame↔transcript correlation. | free |
-| **`deep`** | ~10 min | The whole magic show: agents *describe every frame*, fact-check against the web, and synthesize the editorial HTML page you saw above. | ~$0.50–$2 in Claude tokens |
+| **`deep`** | **≈ the video's length** — a 30-min video took us **~24 min**, *not* 10 | The whole magic show: agents *describe every frame*, fact-check against the web, and synthesize the editorial HTML page you saw above. | ~$0.50–$2 in Claude tokens |
+
+> ⏳ **Deep mode is genuinely slow — budget real time.** It scales with the
+> video's length, not a flat number. On an Apple-silicon Mac a **29.5-minute
+> video took ~24 minutes** end-to-end, and it goes *silent* for minutes at a
+> time inside the agent sub-processes. **That's normal — don't kill it.**
 
 Under the hood:
 
@@ -72,16 +77,25 @@ Under the hood:
 This is a Claude Code-native tool. If you've got Claude Code, you're 90%
 there.
 
-- **[Claude Code](https://claude.com/claude-code)** — installed and signed in
-  (`claude` on your PATH). This is the engine for deep mode.
-- **Python 3.10+**
+- **Python 3.10+** — **hard requirement, not a suggestion.** The scripts use
+  `X | None` type syntax that Python evaluates at runtime, so **3.9 crashes on
+  import** (`TypeError: unsupported operand type(s) for |`). Check first with
+  `python3 --version`; if it's older, build the venv with `python3.12` (or any
+  3.10+).
 - **[ffmpeg](https://ffmpeg.org/)** — `brew install ffmpeg` (macOS) /
-  `apt install ffmpeg` (Linux)
+  `apt install ffmpeg` (Linux). Not bundled.
+- **[Claude Code](https://claude.com/claude-code)** — installed and signed in
+  (`claude` on your PATH). Needed for **deep mode only**.
 - A browser signed into YouTube (Chrome by default) — YouTube increasingly
   demands cookies to download. See [Cookies](#-cookies) below.
 
-`fast` and `standard` modes don't need Claude Code at all — just Python +
-ffmpeg.
+`fast` and `standard` modes don't need Claude Code at all — just Python + ffmpeg.
+
+**Honest hardware notes:** **No GPU, no local model** — all the AI work is
+offloaded to Claude's API, so a laptop is fine; CPU/RAM use is modest. The real
+costs are **disk** (~**290 MB per ~30-min 1080p video**; use `--skip-video` to
+drop most of it), **network** (it downloads the *full* video unless
+`--skip-video`), and, for deep mode, **time + tokens** (see the ⏳ note above).
 
 ---
 
@@ -91,12 +105,13 @@ ffmpeg.
 git clone https://github.com/lukaspitter/ask-youtube.git
 cd ask-youtube
 
-python3 -m venv .venv
+python3 -m venv .venv          # python3 MUST be 3.10+ — else: python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
 That's it. `yt-dlp` ships in `requirements.txt`, so you don't need a
-system-wide install.
+system-wide install. (If `python3` is 3.9, the venv builds fine but the scripts
+crash on import — rebuild with `python3.12 -m venv .venv`.)
 
 ---
 
@@ -167,7 +182,18 @@ output/YYMMDD-ytb-<slug>/
 ```
 
 `analysis.html` is a single, self-styled page (the editorial look you saw
-up top). Open it locally, drop it on any static host, done.
+up top).
+
+> ▶️ **Serve it over HTTP to play the video.** The page embeds the YouTube
+> player via the IFrame API, which rejects a `file://` origin — open it
+> straight off disk and you'll see *"Error 153 — Video player configuration
+> error"* where the video should be. Serve the folder instead:
+> ```bash
+> python3 -m http.server 8000 --directory output/YYMMDD-ytb-<slug>
+> # then open http://localhost:8000/analysis.html
+> ```
+> The text, frames, and timestamp links work either way; only the inline
+> player needs HTTP. Dropping it on any static host works for the same reason.
 
 ---
 

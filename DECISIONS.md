@@ -13,6 +13,22 @@ Append-only log of decisions that shape this project. **Newest first.** Keep ent
 
 ---
 
+## 2026-06-16 — AGENTS.md is the single source of truth for all agents
+- **Decision:** Added a top-level `AGENTS.md` as the canonical agent-onboarding
+  doc (overview, run/test commands, honest hardware & requirements, config,
+  conventions). `CLAUDE.md` is now a thin layer that imports it (`@AGENTS.md`)
+  and keeps only Claude-specific bits (sub-agent paths, self-improvement loop).
+  `README.md` carries the same facts for humans.
+- **Context:** Asked to optimise the repo for Claude Code, Codex, OpenClaw/
+  OpenCode, and Hermes. Research confirmed `AGENTS.md` is the de-facto multi-tool
+  standard (Codex, OpenClaw/OpenCode, Goose, Cursor, Aider, … all read it);
+  Claude Code reads `CLAUDE.md` but Anthropic now also recommends `AGENTS.md`.
+- **Rationale:** One file every agent reads beats N divergent per-tool files.
+  Thin per-tool layers import it so facts live in exactly one place.
+- **Tradeoff:** Three docs to keep loosely in sync (AGENTS / CLAUDE / README);
+  mitigated by making AGENTS.md authoritative and the others point to it.
+- **Status:** Active
+
 ## 2026-06-16 — Live heartbeat ticker for blocking deep-mode calls
 - **Decision:** Added `scripts/progress.py` (`Heartbeat`) and wrapped the three long, silent `subprocess.run` calls — Haiku scoring (`transcript_utils.py`), the parallel frame-describer phase, and video-analyzer synthesis (`analyze_video.py`) — so each shows a ticking elapsed counter plus its timeout ceiling.
 - **Context:** Deep mode goes silent for minutes inside captured subprocesses; a static "Synthesizing…" line is indistinguishable from a hang (the README even warned "don't kill it").
