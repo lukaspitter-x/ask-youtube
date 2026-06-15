@@ -1,46 +1,78 @@
 # ask-youtube
 
-> 🤖 **Optimised for [Claude](https://claude.com/claude-code).** This project is built and
-> maintained with Claude Code, and ships a self-improving knowledge base (`CLAUDE.md`,
-> `DECISIONS.md`, `LESSONS.md`) so every session gets sharper. **Any AI agent working in this
-> repo must adopt those conventions:** read `CLAUDE.md` first, honor `DECISIONS.md` and
-> `LESSONS.md`, append to them as you go, and commit at each milestone. See
-> [Self-improvement loop](CLAUDE.md#self-improvement-loop).
+**Stop watching YouTube. Start interrogating it.** Paste a URL and the one question
+you actually have — a swarm of Claude Code agents watches the whole thing for you
+(reads the transcript, *looks* at every frame, fact-checks against the web) and
+hands back a magazine-grade page that just answers it.
 
-**Stop watching YouTube. Start interrogating it.**
-
-You paste a YouTube URL. A swarm of Claude Code agents watches the whole
-thing for you — reads the transcript, *looks* at the frames, fact-checks
-against the web — and hands you back a magazine-grade analysis page that
-answers the one question you actually had.
-
-No 47-minute "in this video we'll cover" preamble. No scrubbing the
-timeline for the diagram at 12:30. Just the answer, with the receipts.
+<p align="center">
+  <a href="https://lukaspitter-x.github.io/ask-youtube/fable/"><b>▶&nbsp; OPEN THE LIVE DEMO</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://claude.com/claude-code">Built with Claude Code</a>
+  &nbsp;·&nbsp;
+  <a href="LICENSE">MIT</a>
+</p>
 
 ---
 
-## 👀 First, look at what it makes
+## ▶ See a real one — *live, in your browser*
 
-Because telling you is boring. This is the *actual output* — one HTML page
-per video, generated end-to-end from a single command:
+Forget telling you. Here's an **actual page the tool generated** from a 30-minute
+video — working YouTube player, clickable timestamps that seek the video, the whole
+editorial layout. **One click is the fastest way to understand this entire repo:**
 
-### "What's Anthropic's actual recommended Claude Code setup?"
+<p align="center">
+  <a href="https://lukaspitter-x.github.io/ask-youtube/fable/">
+    <img src="docs/fable/preview-hero.png" alt="Live analysis page — The weird situation with Fable" width="100%">
+  </a>
+</p>
+
+<h3 align="center">
+  👉 <a href="https://lukaspitter-x.github.io/ask-youtube/fable/">Open the live page&nbsp;→&nbsp;lukaspitter-x.github.io/ask-youtube/fable</a>
+</h3>
+
+<p align="center">
+  <sub>The question that was asked: <i>"What are the most shocking things about what happened with Fable? Who jailbroke it, and why is Anthropic doing this?"</i></sub>
+</p>
+
+Every page opens with **THE ANSWER** — one sentence written to your exact question —
+then it *earns it*. It doesn't just read the words: it **looks at the video**, pulls
+the exact frames that matter, and timestamps each one so a click jumps the player
+straight there. ⤵
+
+<p align="center">
+  <a href="https://lukaspitter-x.github.io/ask-youtube/fable/">
+    <img src="docs/fable/preview-depth.png" alt="It pulls the real frames out of the video and analyses them" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <b><a href="https://lukaspitter-x.github.io/ask-youtube/fable/">↗&nbsp; Go click around the live, scrollable version</a></b>
+  &nbsp;—&nbsp; or <a href="docs/fable/analysis.md">read the raw markdown</a> right here on GitHub.
+</p>
+
+<details>
+<summary><b>📄 More examples</b> (static screenshots of other runs)</summary>
+
+<br>
+
+**"What's Anthropic's actual recommended Claude Code setup?"**
 ![Anthropic Claude Code harness analysis](docs/examples/example-1-anthropic-harness.png)
 
-### "What's the real opportunity in agentic engineering — and what do I do about it?"
+**"What's the real opportunity in agentic engineering?"**
 ![Agentic engineering analysis](docs/examples/example-2-agentic-engineering.png)
 
-### "How did this guy build an AI agent that designs like him?"
+**"How did this guy build an AI agent that designs like him?"**
 ![AI agent that designs like me analysis](docs/examples/example-3-designs-like-me.png)
 
-Each page opens with **THE ANSWER** — the single most important sentence,
-written to your exact question — then backs it with intent-scored key
-frames, timestamped chapters, and supporting depth pulled from the web.
+Full markdown for all three lives in [`examples/`](examples/).
 
-> 📄 Want to read full ones? The complete markdown for all three lives in
-> [`examples/`](examples/). And here's a
-> [full-length rendered page](docs/examples/example-1-anthropic-harness-full.png)
-> so you can see how deep it goes.
+</details>
+
+> 🤖 **Built with — and for — AI agents.** ask-youtube is maintained with Claude Code
+> and ships a self-improving knowledge base. Any agent working in this repo should read
+> **[AGENTS.md](AGENTS.md)** first (it's the single source of truth), then honor
+> `DECISIONS.md` / `LESSONS.md` and append as it goes.
 
 ---
 

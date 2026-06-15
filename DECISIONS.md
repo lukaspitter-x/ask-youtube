@@ -13,6 +13,22 @@ Append-only log of decisions that shape this project. **Newest first.** Keep ent
 
 ---
 
+## 2026-06-16 — Live GitHub Pages demo is the README hero
+- **Decision:** Publish a real deep-mode output to GitHub Pages
+  (`docs/fable/` → https://lukaspitter-x.github.io/ask-youtube/fable/) and rebuild
+  the top of the README around it — clickable preview screenshots
+  (`docs/fable/preview-hero.png`, `preview-depth.png`) linking to the live page,
+  above everything else. Static example screenshots demoted to a `<details>`.
+- **Context:** The rendered HTML page (working player, seek-on-click timestamps,
+  intent-scored frames) is the single most convincing artifact; a `file://` or a
+  screenshot can't convey it. Pages serves over https so the embedded player works.
+- **Rationale:** One click on a live, interactive page communicates what the repo
+  does faster than any prose. Lead with the payoff.
+- **Tradeoff:** Publishing copies the page + 42 frames (~23 MB) into `docs/`; the
+  analysis is now public and indexable. To publish future runs: copy
+  `index.html`/`analysis.md`/`frames` into a new `docs/<name>/`, commit, push.
+- **Status:** Active
+
 ## 2026-06-16 — AGENTS.md is the single source of truth for all agents
 - **Decision:** Added a top-level `AGENTS.md` as the canonical agent-onboarding
   doc (overview, run/test commands, honest hardware & requirements, config,
