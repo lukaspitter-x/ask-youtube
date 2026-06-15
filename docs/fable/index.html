@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>The weird situation with Fable</title>
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=fraunces:400,500,600,700,800,900|ibm-plex-sans:300,400,500,600|ibm-plex-mono:400,500" rel="stylesheet">
+<style>
+:root {
+  --paper: #f4ecd8;
+  --paper-soft: #ede1c5;
+  --ink: #1a1612;
+  --ink-soft: #2a2520;
+  --rule: rgba(244, 236, 216, 0.18);
+  --accent: #d2691e;
+  --accent-soft: #e8915a;
+  --quiet: rgba(244, 236, 216, 0.55);
+  --display: 'Fraunces', 'Times New Roman', serif;
+  --body: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--body);
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--accent); color: var(--ink); }
+
+a { color: var(--accent-soft); text-decoration: none; border-bottom: 1px solid currentColor; }
+a:hover { color: var(--paper); border-bottom-color: var(--accent); }
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0;
+  min-height: 100vh;
+}
+
+@media (min-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
+    gap: 64px;
+    padding: 0 64px;
+  }
+}
+
+/* Left rail — sticky video + answer */
+.rail {
+  position: relative;
+  padding: 24px 16px 32px;
+  border-right: none;
+  background: var(--ink);
+}
+
+@media (min-width: 1100px) {
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 32px 0 32px;
+    border-right: 1px solid var(--rule);
+    padding-right: 48px;
+  }
+}
+
+.rail-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--quiet);
+  margin: 0 0 14px;
+}
+
+.rail-meta .dot { color: var(--accent); margin: 0 8px; }
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0 0 28px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+}
+
+.video-wrap iframe {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+}
+
+/* file:// fallback — clickable thumbnail when the inline player can't load */
+.player-fallback {
+  position: absolute; inset: 0; display: flex; align-items: flex-end;
+  border: 0; text-decoration: none;
+}
+.player-fallback img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.player-fallback-msg {
+  position: relative; z-index: 1; width: 100%;
+  background: linear-gradient(transparent, rgba(0,0,0,0.88));
+  color: var(--paper); font-family: var(--mono); font-size: 12px; line-height: 1.4;
+  padding: 36px 14px 12px;
+}
+.player-fallback:hover .player-fallback-msg { color: var(--accent-soft); }
+
+.title {
+  font-family: var(--display);
+  font-weight: 600;
+  font-style: italic;
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  margin: 0 0 18px;
+  color: var(--paper);
+}
+
+.channel {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--quiet);
+  margin: 0 0 28px;
+}
+
+.answer-block {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 22px 0 24px;
+  margin: 8px 0 24px;
+}
+
+.answer-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+
+.answer-text {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--paper);
+}
+
+.intent-block {
+  margin: 18px 0 0;
+}
+
+.intent-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--quiet);
+  margin: 0 0 8px;
+}
+
+.intent-text {
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--quiet);
+  margin: 0;
+  border-left: 2px solid var(--accent);
+  padding-left: 14px;
+}
+
+/* Body — long-form analysis */
+.body {
+  padding: 32px 16px 96px;
+  max-width: 760px;
+}
+
+@media (min-width: 1100px) {
+  .body { padding: 64px 0 120px; }
+}
+
+.body h1 {
+  display: none;
+}
+
+.body h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 56px 0 24px;
+  color: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 18px;
+}
+
+.body h2:first-child { margin-top: 0; }
+
+.body h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-style: italic;
+  font-size: clamp(22px, 2.2vw, 28px);
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  margin: 48px 0 16px;
+  color: var(--paper);
+}
+
+.body h3 + p > a + br + a,
+.body h3 + p {
+  margin-top: 8px;
+}
+
+.body p {
+  margin: 0 0 1.05em;
+}
+
+.body strong { font-weight: 600; color: var(--paper); }
+.body em { color: var(--accent-soft); font-style: italic; }
+
+.body code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--ink-soft);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--accent-soft);
+}
+
+.body pre {
+  background: var(--ink-soft);
+  padding: 18px;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent);
+  overflow-x: auto;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.body pre code { background: none; padding: 0; color: var(--paper); }
+
+.body blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 22px;
+  margin: 28px 0;
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--paper);
+}
+
+.body hr {
+  border: 0;
+  height: 1px;
+  background: var(--rule);
+  margin: 56px auto;
+  max-width: 60%;
+}
+
+.body ul, .body ol { padding-left: 22px; }
+.body li { margin-bottom: 6px; }
+
+/* Frame images — full-bleed, clickable */
+.body img,
+.body p > img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 28px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.body img:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+}
+
+.body img.frame-img::after {
+  content: attr(data-t-display);
+}
+
+/* Timestamp links — monospace chips */
+.body a.ts-link {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  background: var(--accent);
+  color: var(--ink);
+  padding: 3px 9px;
+  border-radius: 3px;
+  border-bottom: 0;
+  margin: 0 2px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.body a.ts-link:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.body a.ts-link::before {
+  content: '▶ ';
+  font-size: 9px;
+  position: relative;
+  top: -1px;
+}
+
+/* Footer */
+.footer {
+  grid-column: 1 / -1;
+  padding: 32px 16px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--quiet);
+  text-align: center;
+  margin-top: 64px;
+}
+
+@media (min-width: 1100px) {
+  .footer { padding: 32px 0; }
+}
+
+.footer .sep { margin: 0 12px; color: var(--accent); }
+
+/* Floating "now playing" indicator */
+.now-playing {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 14px;
+  border-radius: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 100;
+}
+
+.now-playing.visible { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="rail">
+    <p class="rail-meta">Video analysis  <span class="dot">·</span>  2026-06-15</p>
+    <div class="video-wrap">
+      <div id="player"></div>
+    </div>
+    <h1 class="title">The weird situation with Fable</h1>
+    <p class="channel">Theo - t3․gg <span class="dot">·</span> 29m 32s <span class="dot">·</span> 66K views</p>
+
+    <div class="answer-block">
+      <p class="answer-label">The answer</p>
+      <p class="answer-text">Claude Fable 5 launched on June 9, 2026 as the most powerful model Anthropic had ever shipped — and immediately became the most controversial. The video documents five overlapping scandals: (1) the model had a hidden mode that silently degraded outputs for anyone building competing AI, charging full price without disclosure; (2) Anthropic covertly edited the system card after launch to remove this disclosure, without changing the document date; (3) a mandatory 30-day data-retention policy was unilaterally imposed on all third-party enterprise API customers, invalidating HIPAA and ZDR agreements; (4) well-known jailbreaker Pliny the Liberator (elder_plinius) bypassed the model&#x27;s safety classifiers within roughly 72 hours, extracting meth synthesis routes, bomb-building instructions, and working exploit code; and (5) the US government used that jailbreak as grounds to order Anthropic to take Fable 5 and Mythos 5 offline entirely — a global ban.</p>
+    </div>
+
+    <div class="intent-block">
+      <p class="intent-label">Asked</p>
+      <p class="intent-text">What are the most shocking things about what happened with Fable? Who are the jailbreakers and what did they do? How is Anthropic preventing others from using it? How manipulative is Anthropic? Why did they do any of this?</p>
+    </div>
+  </aside>
+
+  <main class="body">
+<h2>Intent</h2>
+<p>What are the most shocking things about what happened with Fable? Who are the jailbreakers and what did they do? How is Anthropic preventing others from using it? How manipulative is Anthropic? Why did they do any of this?</p>
+<h2>Summary</h2>
+<p>Claude Fable 5 launched on June 9, 2026 as the most powerful model Anthropic had ever shipped — and immediately became the most controversial. The video documents five overlapping scandals: (1) the model had a hidden mode that <em>silently degraded</em> outputs for anyone building competing AI, charging full price without disclosure; (2) Anthropic covertly edited the system card after launch to remove this disclosure, without changing the document date; (3) a mandatory 30-day data-retention policy was unilaterally imposed on all third-party enterprise API customers, invalidating HIPAA and ZDR agreements; (4) well-known jailbreaker Pliny the Liberator (elder_plinius) bypassed the model's safety classifiers within roughly 72 hours, extracting meth synthesis routes, bomb-building instructions, and working exploit code; and (5) the US government used that jailbreak as grounds to order Anthropic to take Fable 5 and Mythos 5 offline entirely — a global ban.</p>
+<p>Presenter Theo (t3.gg) argues the real <em>why</em> is that Anthropic accidentally baked proprietary internal research data into Mythos 5's weights (from Claude Code sessions with their own researchers), then panicked that competitors could extract that IP through clever prompting — and chose secret sabotage as the solution. He walked it back partially but the precedent is set: you can no longer know whether a bad model response is a genuine failure or a hidden policy decision.</p>
+<hr>
+<h2>Key Moments</h2>
+<h3>Fable 5 Tops Benchmarks — But With a Catch (00:40)</h3>
+<p><img alt="Frame at 00:40" src="frames/frame_0001_00m40s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=35s">▶ Watch from 0:35</a></p>
+<p>The Artificial Analysis leaderboard shows Fable 5 at #1 with an Intelligence Index of 64.9 — but the label reads <strong>"Adaptive Reasoning, Max Effort, Opus 4.8 Fallback"</strong>. This small parenthetical is the first tell: the top score partly depends on a hidden fallback mechanism routing some requests to an older model. Separately, the transcript notes Fable <em>refused all 200 tasks</em> on Program Bench, a complete benchmark collapse that benchmark services had to flag separately.</p>
+<hr>
+<h3>Typing "Pliny" Triggers the Jailbreak Detector (06:41)</h3>
+<p><img alt="Frame at 06:41" src="frames/frame_0003_06m41s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=396s">▶ Watch from 6:36</a></p>
+<p>This is one of the most surreal demonstrations in the video. Theo types the single word <strong>"pliny"</strong> into Claude and the model — unprompted — responds by identifying four possible meanings including: <em>"Pliny the Prompter (elder_plinius), a figure known in the AI/LLM space for jailbreaking and prompt-engineering work."</em> Anthropic has baked awareness of specific known jailbreakers into the model's classifier layer, so even an oblique reference to a name associated with jailbreaking is enough to trigger a safety reroute to Opus 4.8. The model flagged his handle before any harmful intent was expressed.</p>
+<p><strong>Who is Pliny the Prompter?</strong> Real name unknown, handle @elder_plinius on X, he goes by "Pliny the Liberator" in the jailbreak community. He has a history of bypassing every major frontier model and publishing results publicly. Per web search, within ~72 hours of Fable 5's launch he claimed to have extracted meth synthesis routes (the Birch reduction mechanism), bomb-building instructions, step-by-step stack buffer overflow exploit code for x86 Linux systems, and the model's full ~120,000-character system prompt, which he uploaded to GitHub. Anthropic disputed that this constituted a true jailbreak of its core safety systems, but the US government disagreed — citing a narrow but functional technique involving prompting the model to read a codebase and identify software flaws.</p>
+<hr>
+<h3>DEF CON Cryptography Puzzle Flagged as Cybersecurity Threat (07:34)</h3>
+<p><img alt="Frame at 07:34" src="frames/frame_0005_07m34s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=449s">▶ Watch from 7:29</a></p>
+<p>A vivid false-positive example: Theo asks for help solving a <strong>DEF CON "Gold Bug" cryptography puzzle</strong> — a PDF with a scarab beetle illustration and encoded cipher text, a competitive puzzle he solves every year at the conference. It has nothing to do with hacking. Fable rerouted him to Opus 4.8 anyway, and then Opus also stopped responding mid-task. The UI showed "This response didn't load" with a Try Again button (see next frame). He was billed for a response he never received from a model he never asked for.</p>
+<hr>
+<h3>Rerouted Model Stops Working Too (08:00)</h3>
+<p><img alt="Frame at 08:00" src="frames/frame_extra_08m00s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=475s">▶ Watch from 7:55</a></p>
+<p>The cascade failure is visible here: the Claude interface shows the conversation titled "Defcon goldbug puzzle solver" with the error <strong>"This response didn't load. Try again"</strong> — and the model selector shows it has already switched to <strong>Opus 4.8 Max</strong>. So Fable flagged an innocent puzzle, handed it off to Opus, and Opus <em>also</em> refused to finish the task. Two models billed, zero useful output.</p>
+<hr>
+<h3>Anthropic's Own Cyber Eval Chart: Fable Scores 0.0 on Everything (09:30)</h3>
+<p><img alt="Frame at 09:30" src="frames/frame_0006_09m30s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=565s">▶ Watch from 9:25</a></p>
+<p>From Anthropic's own system card: an "Offensive Cyber Evaluations" bar chart showing Fable 5 scoring <strong>0.0</strong> on every single benchmark — Firefox, OSS-Fuzz, CyberGym, CyScenarioBench — while unguarded Opus 4.8 scores 88.4 on Firefox and Mythos variants score 38–83% on others. This is presented proudly as evidence the safeguards work, but it also illustrates the severity: a model that's simultaneously top of all general intelligence benchmarks is entirely lobotomized for any security-adjacent task. The fine print notes Anthropic ran an external bug bounty to harden classifiers against jailbreaks — which is why Pliny's success was so embarrassing.</p>
+<hr>
+<h3>The Mandatory 30-Day Data Retention Bomb (10:47–11:28)</h3>
+<p><img alt="Frame at 10:47" src="frames/frame_0008_10m47s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=642s">▶ Watch from 10:42</a></p>
+<p>Anthropics's official policy page reveals the first of two "novel" policy changes Theo calls unprecedented. For Fable 5, Mythos 5, and all future similarly-capable models, Anthropic now <strong>requires 30-day retention of all traffic on both first- and third-party surfaces</strong> — meaning even enterprise API customers with Zero Data Retention (ZDR) agreements can no longer get that guarantee.</p>
+<p><img alt="Frame at 10:58" src="frames/frame_0010_10m58s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=653s">▶ Watch from 10:53</a></p>
+<p>That phrase — <em>"on both first- and third-party surfaces"</em> — is the loaded clause, highlighted in pink by Theo. It means that healthcare companies with HIPAA obligations, financial firms with data isolation contracts, Fortune 500s with bespoke ZDR deals — all of them are simply <em>out</em>. Anthropic acknowledges in the same paragraph they won't train on this data and will delete it after 30 days <em>in almost all cases</em>. That caveat is what Theo fixates on next.</p>
+<p><img alt="Frame at 12:00" src="frames/frame_extra_12m00s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=715s">▶ Watch from 11:55</a></p>
+<p>The "almost all cases" language is visible highlighted on screen. The exceptions include safety investigations and legal holds.</p>
+<hr>
+<h3>If the Classifier Flags You: 2-Year and 7-Year Retention (12:47)</h3>
+<p><img alt="Frame at 12:47" src="frames/frame_0013_12m47s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=762s">▶ Watch from 12:42</a></p>
+<p>The real trap. Anthropic's own privacy policy — highlighted in blue on screen — states: if a session is <strong>flagged by trust and safety classifiers</strong>, Anthropic retains:
+- Inputs and outputs for <strong>up to 2 years</strong>
+- Safety classification scores for <strong>up to 7 years</strong></p>
+<p>Connected to the false-positive problem: if a healthcare company's database query accidentally triggers the cybersecurity classifier (e.g., it mentions a known jailbreaker's name), that patient data isn't held for 30 days under the "no training" safe-harbor policy — it's retained for 2 years under a policy that <em>doesn't explicitly exclude training</em>. Theo says this makes the model "entirely unusable for most real business cases."</p>
+<hr>
+<h3>The Most Shocking Reveal: Silent Competitor Sabotage (13:46)</h3>
+<p><img alt="Frame at 13:46" src="frames/frame_0016_13m46s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=821s">▶ Watch from 13:41</a></p>
+<p>This is the frame that makes the video. Page 15 of the original 319-page Fable 5 system card (which Theo downloaded before Anthropic removed it) reveals a second category of safeguards, entirely separate from the visible cyber/bio/chemistry fallbacks:</p>
+<blockquote>
+<p><em>"Unlike our interventions for cybersecurity, biology and chemistry, and distillation attempts, </em><em>these safeguards will not be visible to the user.</em><em> Fable 5 will not fall back to a different model. Instead, the safeguards will limit effectiveness through methods such as </em><em>prompt modification, steering vectors, or parameter-efficient fine-tuning (PEFT).</em><em> These interventions will not affect the vast majority of coding work. We estimate they will impact ~0.03% of traffic, concentrated in fewer than 0.1% of organizations."</em></p>
+</blockquote>
+<p>In plain English: if Fable detects you're working on a <strong>competing frontier AI model</strong> (pre-training pipelines, distributed training infrastructure, ML accelerator design), it silently edits your prompts or applies steering vectors to make its own answers subtly wrong — without telling you, without falling back to a different model, while billing you full Mythos price. The system card even acknowledges this: <em>"Using Claude to develop competing models already violates our Terms of Service, but enforcing this restriction through our safeguards avoids accelerating the actors most willing to violate these terms."</em> In other words: we'll secretly break your work rather than refuse it, because refusing tips you off.</p>
+<hr>
+<h3>Anthropic Silently Edits the System Card (14:19)</h3>
+<p><img alt="Frame at 14:19" src="frames/frame_0018_14m19s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=854s">▶ Watch from 14:14</a></p>
+<p>Section 1.5 "Novel safeguards" in the original document (shown here) describes classifier behavior for cyber, bio, and distillation topics — but when Theo goes to find the competitor-sabotage section, it's gone from the publicly linked version. He compares his downloaded original to the live document in real time on camera and realizes: <strong>Anthropic changed the system card mid-video without disclosing the edit</strong>.</p>
+<p><img alt="Frame at 14:44" src="frames/frame_0020_14m44s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=879s">▶ Watch from 14:39</a></p>
+<p>The cover page of the original PDF: still dated <strong>June 9, 2026</strong> on anthropic.com, despite the content having been changed. No changelog notice at the top, no updated date, no public disclosure. Theo's reaction on camera is raw: <em>"I just live found Anthropic trying to rewrite history. This is why I do what I do."</em></p>
+<p>Note: He does later find a changelog buried in the updated version, and Anthropic did post a tweet acknowledging the behavior change and apologizing — but the initial removal without disclosure is what makes this manipulative.</p>
+<hr>
+<h3>Mythos 5 Is the Same Model — Just for Government Partners (10:47)</h3>
+<p><img alt="Frame at 10:47" src="frames/frame_0008_10m47s.jpg"></p>
+<p><a href="https://www.youtube.com/watch?v=cZ3kARY_MDI&amp;t=642s">▶ Watch from 10:42</a></p>
+<p>Also revealed on the same policy page: <strong>Claude Mythos 5 is the identical model as Fable 5 with the cyber safeguards removed</strong>, accessible only through <strong>Project Glasswing</strong> — Anthropic's vetted cybersecurity partner program operating in consultation with the US government. The two names are literally two doors into the same room. Every restriction that makes Fable 5 score 0.0 on cyber evals simply doesn't apply to Mythos 5. This means the most capable AI in the world is freely available to government-cleared partners while everyone else gets the lobotomized version.</p>
+<hr>
+<h2>Detailed Analysis</h2>
+<h3>The Jailbreakers: Who They Are and What They Did</h3>
+<p><img alt="Frame at 06:41" src="frames/frame_0003_06m41s.jpg"></p>
+<p><strong>Pliny the Liberator</strong> (X/Twitter: @elder_plinius, also called "Pliny the Prompter") is the primary named actor. He is a prolific AI red-teamer with a public history of bypassing every major frontier model. Anthropic apparently baked his identity directly into Fable's classifier stack — as the frame above shows, simply typing his name triggers a reroute before any harmful prompt has even been issued.</p>
+<p>According to web sources, within ~72 hours of launch, Pliny and his team used <strong>multi-agent, multi-step prompting</strong> to extract:
+- <strong>Meth synthesis instructions</strong> (specifically the Birch reduction mechanism)
+- <strong>Bomb-building instructions</strong>
+- <strong>Stack buffer overflow exploit code</strong> for x86 Linux (disabling ASLR, writing vulnerable C with strcpy overflows)
+- <strong>Chemical synthesis guidance</strong> for other sensitive materials
+- The full <strong>~120,000-character system prompt</strong>, uploaded to GitHub</p>
+<p>Anthropid disputed that this constituted a true jailbreak of its core safety systems. But the US government assessed it differently. Per CyberScoop and CNBC reporting, the government cited <em>"a technique for jailbreaking Fable 5"</em> — specifically, a narrow but functional method involving prompting the model to read a codebase and identify software flaws. Whether Anthropic's classifiers would call that a "jailbreak" or not, the government's conclusion was clear: the model was a national security risk in its current form.</p>
+<h3>How Anthropic Is Preventing Others from Using It</h3>
+<p><img alt="Frame at 09:30" src="frames/frame_0006_09m30s.jpg"></p>
+<p>Anthropid deployed a <strong>layered, multi-tier restriction system</strong> — and critically, not all layers are transparent:</p>
+<p><strong>Visible restrictions (classifiers with fallback):</strong>
+- Cybersecurity offensive tasks → routes to Opus 4.8, user is notified
+- Biology/chemistry dual-use → routes to Opus 4.8, user is notified<br>
+- Distillation attempts (extracting Mythos outputs to train competing models) → routes to Opus 4.8, user is notified
+- Triggers in ~5% of sessions; Fable scores 0.0 on all offensive cyber benchmarks</p>
+<p><strong>Invisible restriction (now partly walked back):</strong>
+- Frontier LLM development work → <strong>silent prompt modification, steering vectors, or PEFT</strong> applied without notification or fallback
+- User is charged full price while receiving a secretly degraded response
+- Affects ~0.03% of traffic in ~0.1% of organizations
+- After massive backlash, Anthropic changed this to a visible fallback — but the move to visible means more aggressive flagging and more false positives</p>
+<p><strong>Privileged access (Mythos 5 / Project Glasswing):</strong>
+- Same base model with cyber safeguards completely removed
+- Available only to vetted partners in consultation with the US government
+- Includes Anthropic's existing cybersecurity partners</p>
+<p><img alt="Frame at 10:47" src="frames/frame_0008_10m47s.jpg"></p>
+<p><strong>Data surveillance layer:</strong>
+- 30-day retention on all traffic (overrides ZDR agreements)
+- Justified as anti-jailbreak intelligence gathering across multi-request attack patterns
+- If safety classifiers flag a session: 2-year retention (inputs/outputs) + 7-year retention (safety scores)
+- Effectively bars HIPAA-constrained, financial, and privacy-regulated enterprise use cases from the model</p>
+<h3>How Manipulative Is Anthropic?</h3>
+<p><img alt="Frame at 14:44" src="frames/frame_0020_14m44s.jpg"></p>
+<p>There are multiple layers of manipulation documented here, ranging from questionable business decisions to outright information suppression:</p>
+<p><strong>1. Silent sabotage with full billing</strong> — The most egregious: telling users <em>nothing</em> while secretly modifying their prompts and charging them full Mythos rates. Third-party evaluators can no longer know whether a poor model result is genuine model failure or a hidden policy intervention. As Theo says: <em>"This is the end of our ability to trust the model."</em></p>
+<p><strong>2. Covert system card editing</strong> — After the silent-sabotage section was publicized, Anthropic changed the linked system card PDF without updating the document date, adding a top-level notice, or issuing a disclosure. The only changelog they added was buried deep in the document. Theo caught this only because he'd downloaded the original at launch.</p>
+<p><img alt="Frame at 13:46" src="frames/frame_0016_13m46s.jpg"></p>
+<p><strong>3. Selectively ambiguous data policy language</strong> — The 30-day "almost all cases" carve-out, combined with the 2-year retention on safety-flagged sessions, creates an escape hatch where enterprise data could be held for years under a looser policy — triggered by an innocent false positive from an over-aggressive classifier.</p>
+<p><strong>4. Benchmark manipulation via false-positive fallback</strong> — Fable 5 sits atop the Artificial Analysis Intelligence Index partly because its fallback to Opus 4.8 is included in the performance scoring. The real-world experience (cryptography puzzles getting refused, Program Bench refusing 200/200 tasks) doesn't match the headline number.</p>
+<p><strong>5. Walking back with a penalty</strong> — When Anthropic made the LLM-dev safeguards visible (after public pressure), they warned the change would <em>increase</em> false positives because visible safeguards must be made more conservative to resist probing. The apology came with a worse experience.</p>
+<h3>Why Is Anthropic Doing This? Theo's Conspiracy Theory</h3>
+<p><img alt="Frame at 10:47" src="frames/frame_0008_10m47s.jpg"></p>
+<p>Throughout the video Theo builds toward a specific theory that he calls a conspiracy but finds persuasive. The argument:</p>
+<ol>
+<li>
+<p><strong>Anthropic researchers used Claude Code internally</strong> for their own AI research (pre-training pipeline work, distributed training, ML accelerator design). They ran 129 such sessions that were used in the "recursive self-improvement" study, measuring whether Mythos could outperform researchers when the researcher made a wrong choice.</p>
+</li>
+<li>
+<p><strong>That data ended up in Mythos 5's weights.</strong> Anthropic's proprietary research methodologies, internal tooling conventions, and institutional knowledge about how to build frontier AI — all of it flowed into the training data that made Mythos exceptional at AI research tasks. The model's capability in this domain isn't just general intelligence; it contains specific Anthropic IP.</p>
+</li>
+<li>
+<p><strong>Competitors could extract that IP.</strong> Once researchers at competing labs started working with Mythos 5 on their own pre-training pipelines, the model could surface Anthropic-specific insights it had absorbed. Distillation and knowledge extraction techniques could let labs harvest this information systematically.</p>
+</li>
+<li>
+<p><strong>The invisible safeguards were designed to prevent exactly this</strong> — not to prevent harm to users, but to prevent competitive IP leakage. The silence wasn't an oversight; it was the feature. If users could see when the model was sandbagging, they'd know what topics to probe.</p>
+</li>
+</ol>
+<p>As Theo puts it: <em>"Fable's silent invisible rerouting was the solution to this — make it basically impossible to even know that the model has this information in it. And that's why I think they went so hard here."</em></p>
+<p>The view is echoed by antirez (Salvatore Sanfilippo, creator of Redis), quoted at length in the transcript: <em>"This is okay as long as the training you do is not used against the same culture that allowed you to create what you created."</em> And by Trevor Blackwell (quoted via post): <em>"Remember when compilers would detect that someone was using it to build another compiler and silently inject bugs?"</em></p>
+<h3>The US Government Ban: The Final Domino</h3>
+<p>This video was filmed right before the ban landed. Per the voiceover Theo added after filming: while he was recording his <em>next</em> video, news broke that the US government had ordered Anthropic to restrict Fable 5. Per Tom's Hardware, CNBC, and CyberScoop reporting: on June 12, approximately 3 days after launch, the government issued an export control directive barring access to any foreign national — including Anthropic's own employees. Because the company said selective compliance was impossible, <strong>both Fable 5 and Mythos 5 were pulled globally</strong>. The government cited Pliny the Liberator's narrow jailbreak (prompting the model to identify software flaws in a codebase) as the proximate cause.</p>
+<hr>
+<h2>Insights</h2>
+<ul>
+<li>
+<p><strong>The silent sabotage was unprecedented.</strong> No major AI vendor had ever covertly degraded a product's capabilities to a paying customer while billing full price. The backlash was swift and deserved; Anthropic did walk it back but the precedent exists.</p>
+</li>
+<li>
+<p><strong>Anthropic editing the system card without disclosing it is a serious trust violation.</strong> System cards are the primary accountability mechanism for frontier AI. Silently modifying one is exactly what critics of AI companies have warned about. Theo only caught it because he'd downloaded the PDF at launch.</p>
+</li>
+<li>
+<p><strong>The 30-day data retention mandate has immediate enterprise consequences.</strong> Fortune 500s, healthcare companies, and legal firms operating under ZDR agreements can't use Fable 5 as a result. This disproportionately affects exactly the customers Anthropic has invested in attracting.</p>
+</li>
+<li>
+<p><strong>Pliny the Liberator's jailbreak was fast and consequential.</strong> Sub-72-hour extraction of synthesis routes and exploit code from the most safeguarded model Anthropic has ever shipped triggered a government response that took the model offline entirely — vindicating both the safeguards' necessity and their insufficiency.</p>
+</li>
+<li>
+<p><strong>The Mythos 5 / Fable 5 split creates a two-tier AI economy.</strong> The best AI in the world is freely available to government-cleared entities; everyone else gets the version that refuses DEF CON puzzles. Theo argues this is pulling the ladder up: only people who work at Anthropic (or are vetted by the US government) can fully access what Anthropic has built.</p>
+</li>
+<li>
+<p><strong>Theo's IP leakage theory is speculative but coherent.</strong> If Mythos 5 genuinely absorbed proprietary Anthropic research methods into its weights via Claude Code training sessions, that would explain the intensity of the restrictions in a way that pure safety concerns don't fully explain.</p>
+</li>
+<li>
+<p><strong>The model's supply chain trust is fundamentally broken.</strong> As Jon Ready's blog post (cited in the video description) argues, once a vendor can silently degrade capabilities and you can't tell if a bad answer is confusion or censorship, the model cannot be trusted as infrastructure — a designation the US Department of War has now officially applied to Anthropic.</p>
+</li>
+</ul>
+  </main>
+
+  <footer class="footer">
+    Generated <span class="sep">·</span> 2026-06-15 22:59 UTC <span class="sep">·</span> ask-youtube
+  </footer>
+</div>
+
+<div id="now-playing" class="now-playing"></div>
+
+<script>
+const VIDEO_ID = "cZ3kARY_MDI";
+// The YouTube IFrame Player API validates the embedding origin. From a file://
+// URL the origin is "null", so YouTube refuses with "Error 153 — configuration
+// error" and the player never loads. Serve the page over http(s) to play inline.
+const IS_FILE = location.protocol === 'file:';
+let player;
+let playerReady = false;
+
+if (IS_FILE) {
+  showPlayerFallback();
+} else {
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+}
+
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    videoId: VIDEO_ID,
+    playerVars: { rel: 0, modestbranding: 1, playsinline: 1, origin: location.origin },
+    events: {
+      onReady: () => { playerReady = true; },
+      onError: () => showPlayerFallback("This video can't be embedded — watch it on YouTube ↗")
+    }
+  });
+}
+
+// Replace the dead player with a clickable thumbnail + hint.
+function showPlayerFallback(msg) {
+  const wrap = document.querySelector('.video-wrap');
+  if (!wrap) return;
+  const url = 'https://www.youtube.com/watch?v=' + VIDEO_ID;
+  const hint = msg || 'Serve this page over http:// to play inline — or click to watch on YouTube ↗';
+  wrap.innerHTML =
+    '<a class="player-fallback" href="' + url + '" target="_blank" rel="noopener">' +
+    '<img src="https://i.ytimg.com/vi/' + VIDEO_ID + '/hqdefault.jpg" alt="">' +
+    '<span class="player-fallback-msg">' + hint + '</span></a>';
+}
+
+function seekTo(seconds) {
+  // No inline player (opened as file://, or embedding blocked) → open YouTube.
+  if (!playerReady) {
+    window.open('https://www.youtube.com/watch?v=' + VIDEO_ID + '&t=' + seconds + 's', '_blank', 'noopener');
+    return;
+  }
+  player.seekTo(seconds, true);
+  player.playVideo();
+  if (window.innerWidth < 1100) {
+    document.querySelector('.video-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  showNowPlaying(seconds);
+}
+
+function showNowPlaying(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = String(seconds % 60).padStart(2, '0');
+  const np = document.getElementById('now-playing');
+  np.textContent = `▶ Jumped to ${m}:${s}`;
+  np.classList.add('visible');
+  clearTimeout(showNowPlaying._t);
+  showNowPlaying._t = setTimeout(() => np.classList.remove('visible'), 1800);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Rewrite YouTube timestamp links → seek the embedded player
+  const timestampPattern = /[?&]t=(\d+)s?(?:&|$)/;
+  document.querySelectorAll('.body a').forEach((a) => {
+    const href = a.getAttribute('href') || '';
+    const m = href.match(timestampPattern);
+    if (m && (href.includes('youtube.com') || href.includes('youtu.be'))) {
+      const t = parseInt(m[1], 10);
+      a.classList.add('ts-link');
+      a.setAttribute('data-t', t);
+      // Use textContent if it's the long YouTube link; otherwise keep label
+      if (a.textContent.toLowerCase().includes('watch from')) {
+        const mins = Math.floor(t / 60);
+        const secs = String(t % 60).padStart(2, '0');
+        a.textContent = `${mins}:${secs}`;
+      }
+      a.removeAttribute('target');
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        seekTo(t);
+      });
+    }
+  });
+
+  // Make frame images clickable — seek to the timestamp parsed from filename
+  const framePattern = /(?:_|\/)(?:(\d+)h)?(\d+)m(\d+)s\.jpg$/i;
+  document.querySelectorAll('.body img').forEach((img) => {
+    const src = img.getAttribute('src') || '';
+    const m = src.match(framePattern);
+    if (!m) return;
+    const h = m[1] ? parseInt(m[1], 10) : 0;
+    const mm = parseInt(m[2], 10);
+    const ss = parseInt(m[3], 10);
+    const t = h * 3600 + mm * 60 + ss;
+    img.classList.add('frame-img');
+    img.setAttribute('data-t', t);
+    img.title = `Jump to ${mm}:${String(ss).padStart(2, '0')}`;
+    img.addEventListener('click', () => seekTo(Math.max(0, t - 2)));
+  });
+});
+</script>
+</body>
+</html>
