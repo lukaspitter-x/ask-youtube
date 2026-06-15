@@ -1,5 +1,12 @@
 # ask-youtube
 
+> 🤖 **Optimised for [Claude](https://claude.com/claude-code).** This project is built and
+> maintained with Claude Code, and ships a self-improving knowledge base (`CLAUDE.md`,
+> `DECISIONS.md`, `LESSONS.md`) so every session gets sharper. **Any AI agent working in this
+> repo must adopt those conventions:** read `CLAUDE.md` first, honor `DECISIONS.md` and
+> `LESSONS.md`, append to them as you go, and commit at each milestone. See
+> [Self-improvement loop](CLAUDE.md#self-improvement-loop).
+
 **Stop watching YouTube. Start interrogating it.**
 
 You paste a YouTube URL. A swarm of Claude Code agents watches the whole
